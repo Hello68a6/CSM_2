@@ -38,10 +38,10 @@ function [x_a,elem]=generate_mesh(flag)
         el_idx = 1;
         for j = 1:ny
             for i = 1:nx
-                % Node indices for the current element (counter-clockwise)
-                % n4 -- n3
-                % |     |
+                % Node indices for the current element (clockwise)
                 % n1 -- n2
+                % |     |
+                % n4 -- n3
                 
                 n1 = (j-1)*(nx+1) + i;
                 n2 = n1 + 1;

@@ -5,26 +5,26 @@ This is a MATLAB-based Finite Element Analysis (FEA) solver for 2D linear elasti
 
 ## Architecture & Workflow
 The entry point is `main.m`, which orchestrates the FEA process in the following linear sequence:
-1.  **Mesh Generation** (`generate_mesh.m`): Creates nodes and connectivity.
-2.  **Geometry Calculation** (`g_center.m`): Computes element centers and areas.
-3.  **Boundary Conditions** (`Boundary_conditions.m`): Defines constraints and loads.
-4.  **B Matrix Assembly** (`B_matrix.m`): Computes strain-displacement matrices.
-5.  **Stiffness Matrix Assembly** (`K_matrix.m`): Assembles the global stiffness matrix `K`.
-6.  **Force Vector Assembly** (`F_vector.m`): Assembles the global force vector `F`.
-7.  **BC Enforcement** (`Enforce_BC.m`): Modifies `K` and `F` for essential (displacement) boundary conditions.
+1.  **Mesh Generation** (`generate_mesh.m`): Creates nodes (`x_a`) and connectivity (`elem`). Controlled by `flag` (1=Tri, 2=Quad).
+2.  **Geometry Calculation** (`g_center.m`): Computes element centers (`xg`) and areas (`Area`).
+3.  **Boundary Conditions** (`Boundary_conditions.m`): Defines constraints (`boundary`), prescribed displacements (`dis`), and nodal areas (`l_area`).
+4.  **B Matrix Assembly** (`B_matrix.m`): Computes strain-displacement matrices. Returns `B` (cell array) and `p` (shape function values).
+5.  **Stiffness Matrix Assembly** (`K_matrix.m`): Assembles the global stiffness matrix `K`. **(To be implemented)**
+6.  **Force Vector Assembly** (`F_vector.m`): Assembles the global force vector `F`. **(To be implemented)**
+7.  **BC Enforcement** (`Enforce_BC.m`): Modifies `K` and `F` for essential (displacement) boundary conditions. **(To be implemented)**
 8.  **Solution**: Solves the linear system `u = K \ F`.
-9.  **Post-processing** (`constitutive.m`, `plot_results.m`): Computes stresses and visualizes results.
+9.  **Post-processing** (`constitutive.m`, `plot_results.m`): Computes stresses/strains and visualizes results.
 
 ## Key Data Structures
-Understanding these variable names is critical for all functions:
-
-*   **`x_a` (Nodes)**: `[N x 2]` matrix of nodal coordinates. Row `i` is `(x, y)` for node `i`.
+*   **`x_a` (Nodes)**: `[N x 2]` matrix. Row `i` is `(x, y)` for node `i`.
 *   **`elem` (Connectivity)**: `[M x 3]` (tri) or `[M x 4]` (quad) matrix. Row `e` contains node indices for element `e`.
-*   **`K` (Stiffness Matrix)**: `[2N x 2N]` global stiffness matrix.
-*   **`F` (Force Vector)**: `[2N x 1]` global force vector.
-*   **`boundary`**: `[2N x 1]` boolean vector. `1` indicates a constrained DOF, `0` is free.
+*   **`B` (Strain-Displacement)**: Cell array of size `[1 x M]`. `B{e}` is the B-matrix for element `e`.
+*   **`properties`**: Vector `[E, nu]`. `E` = Young's Modulus, `nu` = Poisson's ratio.
+*   **`K` (Stiffness)**: `[2N x 2N]` global stiffness matrix.
+*   **`F` (Force)**: `[2N x 1]` global force vector.
+*   **`boundary`**: `[2N x 1]` boolean vector. `1` = constrained DOF, `0` = free.
 *   **`dis`**: `[2N x 1]` vector of prescribed displacement values.
-*   **`l_area`**: `[N x 1]` vector containing the surface area associated with each node (for traction calculation).
+*   **`l_area`**: `[N x 1]` vector of nodal surface areas (for traction calculation).
 
 ### Degree of Freedom (DOF) Ordering
 DOFs are interleaved by node:
@@ -34,25 +34,33 @@ DOFs are interleaved by node:
 
 ## Implementation Guidelines
 
-### Matrix Assembly
-*   **Global Matrix Initialization**: Always pre-allocate `K` (e.g., `zeros(2*num_nodes)`) before looping.
-*   **Element Loop**: Iterate through elements `e = 1:num_elements`.
-    *   Extract node indices from `elem(e, :)`.
-    *   Compute element stiffness matrix `k_el`.
-    *   Map local DOFs to global DOFs using the interleaved ordering.
-    *   Add `k_el` to the appropriate positions in `K`.
+### Stiffness Matrix (`K_matrix.m`)
+*   **Material Matrix (D)**: Implement **Plane Stress** assumption (consistent with `constitutive.m`).
+    $$ D = \frac{E}{1-\nu^2} \begin{bmatrix} 1 & \nu & 0 \\ \nu & 1 & 0 \\ 0 & 0 & \frac{1-\nu}{2} \end{bmatrix} $$
+*   **Assembly**:
+    *   Initialize `K = zeros(2*num_nodes)`.
+    *   Loop over elements `e`.
+    *   Retrieve `Be = B{e}` and `Ae = Area(e)`.
+    *   Compute element stiffness: `Ke = Be' * D * Be * Ae`. (Assume unit thickness).
+    *   Assemble `Ke` into global `K` using indices from `elem(e, :)`.
 
-### Boundary Conditions
-*   **Enforcement**: Modify `K` and `F` to enforce $u_j = \bar{u}_j$.
-    *   Common method: Zero out row `j` and column `j` of `K`, set diagonal `K(j,j) = 1`, and set `F(j) = \bar{u}_j`.
-    *   Adjust `F` for other equations to maintain symmetry if required, or use the penalty method if preferred (though direct substitution is implied by the structure).
+### Force Vector (`F_vector.m`)
+*   **Traction**: Apply traction `Load` to nodes with non-zero `l_area`.
+*   **Calculation**: For node `i`, force components are `Load(1) * l_area(i)` and `Load(2) * l_area(i)`.
+*   **Assembly**: Map to global DOFs `2*i-1` and `2*i`.
 
-### MATLAB Best Practices
-*   Use vectorization for geometric calculations where possible.
-*   Use `zeros`, `ones`, `eye` for initialization.
-*   Use `\` (mldivide) for solving linear systems.
+### Boundary Conditions (`Enforce_BC.m`)
+*   **Direct Substitution Method**:
+    *   Loop through all DOFs `j = 1:2*num_nodes`.
+    *   If `boundary(j) == 1`:
+        *   `K(j, :) = 0` (Zero out row)
+        *   `K(:, j) = 0` (Zero out column - optional but good for symmetry)
+        *   `K(j, j) = 1` (Set diagonal to 1)
+        *   `F(j) = dis(j)` (Set RHS to prescribed value)
+        *   *Note*: If zeroing columns, adjust `F` to account for known displacements affecting other equations: `F = F - K_column_j * dis(j)`. If `dis(j) == 0`, this is not needed.
 
 ## Development Workflow
-*   **Run**: Execute `main.m` in the MATLAB terminal to run the full simulation.
-*   **Toggle Mesh**: Change `flag=1` (triangle) or `flag=2` (quadrilateral) in `main.m` to test different element types.
-*   **Debug**: Use `plot_results.m` output to visually verify if deformations and stresses look physical.
+*   **Run Simulation**: Execute `main.m`.
+*   **Switch Elements**: Modify `flag=1` (Tri) or `flag=2` (Quad) in `main.m`.
+*   **Visualization**: `plot_results.m` is called automatically. Use `triplot` or `quadplot` for mesh debugging.
+*   **Data Persistence**: Results are saved to `DATA.mat`.
