@@ -1,0 +1,51 @@
+# ==============================================
+# MATLAB 项目专用 .gitignore 文件
+# ==============================================
+
+# --- MATLAB 自动生成的文件 ---
+*.asv                    # 自动保存文件（编辑器备份）
+*.m~                     # 某些编辑器的备份文件
+*.mlappbak               # App Designer 备份文件
+*.autosave               # 自动保存文件
+
+# --- 编译/打包/部署文件 ---
+*.mex*                   # MEX 可执行文件（根据系统不同扩展名不同）
+*.p                      # 加密的 P 代码文件
+project.prj              # 项目配置文件（可选择性忽略）
+*.prj                    # 其他项目文件
+packagedApp/             # 打包的应用文件夹
+deploy/                  # 部署输出目录
+
+# --- 临时文件和缓存 ---
+mlcache/                 # MATLAB 缓存目录
+simcache/                # Simulink 缓存目录
+codegen/                 # 代码生成输出目录
+slprj/                   # Simulink 项目临时文件
+html/                    # 发布的 HTML 文件
+
+# --- 系统文件 ---
+.DS_Store                # macOS 属性文件
+Thumbs.db                # Windows 缩略图缓存
+desktop.ini             # Windows 文件夹自定义设置
+
+# --- 日志和报告 ---
+*.log                    # 日志文件
+*.matlab_crash_dump.*    # MATLAB 崩溃转储文件
+diary                    # 命令行历史记录（diary 输出）
+
+# --- 版本控制工具文件 ---
+.svn/                    # SVN 版本控制目录
+CVS/                     # CVS 版本控制目录
+
+# --- 依赖库（根据需要取消注释） ---
+# lib/                    # 第三方库目录
+# packages/               # 包管理工具目录（如 MATLAB 工具箱）
+
+# --- 数据文件（根据项目需要取消注释） ---
+# *.mat                   # MAT 数据文件（如果数据较大）
+# *.csv                   # CSV 数据文件
+# *.xlsx                  # Excel 文件
+
+# --- 用户特定设置 ---
+prefdir/                 # MATLAB 偏好设置目录（谨慎忽略）
+.settings/               # 项目特定设置目录

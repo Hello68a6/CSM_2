@@ -64,7 +64,7 @@ flag=1;   % 1: triangular element;   2: quadrilateral element.
     [F]=F_vector(x_a,Load,l_area);
 
 % 7. Enforce Essential Boundary Condition
-    [F,K]=Enforce_BC(F,K,boundary,disp,x_a);
+    [F,K]=Enforce_BC(F,K,boundary,dis,x_a);
     
 % 8. Solve the problem
     [u]=K\F;
