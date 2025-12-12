@@ -38,13 +38,13 @@ diary                    # 命令行历史记录（diary 输出）
 CVS/                     # CVS 版本控制目录
 
 # --- 依赖库（根据需要取消注释） ---
-# lib/                    # 第三方库目录
-# packages/               # 包管理工具目录（如 MATLAB 工具箱）
+ lib/                    # 第三方库目录
+ packages/               # 包管理工具目录（如 MATLAB 工具箱）
 
 # --- 数据文件（根据项目需要取消注释） ---
-# *.mat                   # MAT 数据文件（如果数据较大）
-# *.csv                   # CSV 数据文件
-# *.xlsx                  # Excel 文件
+ *.mat                   # MAT 数据文件（如果数据较大）
+ *.csv                   # CSV 数据文件
+ *.xlsx                  # Excel 文件
 
 # --- 用户特定设置 ---
 prefdir/                 # MATLAB 偏好设置目录（谨慎忽略）
