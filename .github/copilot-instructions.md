@@ -6,6 +6,7 @@ This is a MATLAB-based Finite Element Analysis (FEA) solver for 2D linear elasti
 ## Architecture & Workflow
 The entry point is `main.m`, which orchestrates the FEA process in the following linear sequence:
 1.  **Mesh Generation** (`generate_mesh.m`): Creates nodes (`x_a`) and connectivity (`elem`). Controlled by `flag` (1=Tri, 2=Quad).
+    *   **Note**: Verify node winding order (Clockwise vs Counter-Clockwise) in `elem` as it affects signed area calculations in `g_center.m`. User indicates Quad elements are generated Clockwise.
 2.  **Geometry Calculation** (`g_center.m`): Computes element centers (`xg`) and areas (`Area`).
 3.  **Boundary Conditions** (`Boundary_conditions.m`): Defines constraints (`boundary`), prescribed displacements (`dis`), and nodal areas (`l_area`).
 4.  **B Matrix Assembly** (`B_matrix.m`): Computes strain-displacement matrices. Returns `B` (cell array) and `p` (shape function values).
@@ -17,7 +18,7 @@ The entry point is `main.m`, which orchestrates the FEA process in the following
 
 ## Key Data Structures
 *   **`x_a` (Nodes)**: `[N x 2]` matrix. Row `i` is `(x, y)` for node `i`.
-*   **`elem` (Connectivity)**: `[M x 3]` (tri) or `[M x 4]` (quad) matrix. Row `e` contains node indices for element `e`.
+*   **`elem` (Connectivity)**: `[M x 3]` (tri) or `[M x 4]` (quad) matrix. Row `e` contains node indices for element `e`. Verify winding order.
 *   **`B` (Strain-Displacement)**: Cell array of size `[1 x M]`. `B{e}` is the B-matrix for element `e`.
 *   **`properties`**: Vector `[E, nu]`. `E` = Young's Modulus, `nu` = Poisson's ratio.
 *   **`K` (Stiffness)**: `[2N x 2N]` global stiffness matrix.

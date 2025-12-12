@@ -66,12 +66,12 @@ function [x_a,elem]=generate_mesh(flag)
                 n3 = n2 + (nx+1);
                 n4 = n1 + (nx+1);
                 
-                % Triangle 1: n1-n2-n3
-                elem(el_idx, :) = [n1, n2, n3];
+                % Triangle 1: n1-n2-n4 (Top-Left)
+                elem(el_idx, :) = [n1, n2, n4];
                 el_idx = el_idx + 1;
                 
-                % Triangle 2: n1-n3-n4
-                elem(el_idx, :) = [n1, n3, n4];
+                % Triangle 2: n2-n3-n4 (Bottom-Right)
+                elem(el_idx, :) = [n2, n3, n4];
                 el_idx = el_idx + 1;
             end
         end
