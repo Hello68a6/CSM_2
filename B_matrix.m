@@ -120,6 +120,40 @@ end
 % B: the B matrix of all the elements
 function [B]=bm(dp,elem,sp)
 
-    % TODO: Complete this function
+    [elements, ~] = size(elem);
+    B = cell(1, elements);
+
+    for i = 1:elements
+        dpe = dp{i}; % Derivatives for current element [NNE x 2]
+        [NNE, ~] = size(dpe);
+        
+        % Initialize element B matrix
+        % Rows: 3 (epsilon_x, epsilon_y, gamma_xy)
+        % Cols: 2 * NNE (u1, v1, u2, v2, ...)
+        Be = zeros(3, sp * NNE);
+        
+        for k = 1:NNE
+            % Derivatives of shape function for node k
+            dN_dx = dpe(k, 1);
+            dN_dy = dpe(k, 2);
+            
+            % Column indices for node k
+            col_u = sp * (k - 1) + 1;
+            col_v = sp * (k - 1) + 2;
+            
+            % Fill B matrix
+            % epsilon_x = dN_dx * u
+            Be(1, col_u) = dN_dx;
+            
+            % epsilon_y = dN_dy * v
+            Be(2, col_v) = dN_dy;
+            
+            % gamma_xy = dN_dy * u + dN_dx * v
+            Be(3, col_u) = dN_dy;
+            Be(3, col_v) = dN_dx;
+        end
+        
+        B{i} = Be;
+    end
 
 end
