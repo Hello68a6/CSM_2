@@ -17,30 +17,32 @@ It is now configured to solve **Assignment 2, Problem 2** (Pinned Plate with Gau
     *   Load is applied downwards ($C = -10^6$).
 
 ## Current Architecture
-1.  **`main.m`**:
+All source code is now located in the `src/` directory.
+
+1.  **`src/main.m`**:
     *   **Automated Workflow**: Loops through Element Types (Tri3, Quad4) and Mesh Densities (5x5, 10x10, 50x50).
     *   **Orchestration**: Calls mesh generation, assembly, BC enforcement, solver, and post-processing.
-2.  **`generate_mesh.m`**:
+2.  **`src/generate_mesh.m`**:
     *   Accepts `nx`, `ny` arguments for variable mesh density.
-3.  **`Boundary_conditions.m`**:
+3.  **`src/Boundary_conditions.m`**:
     *   Enforces **Pinned Edges** ($w=0$) on all 4 sides.
     *   Rotations are free (Hard Support).
-4.  **`B_matrix.m`**:
+4.  **`src/B_matrix.m`**:
     *   Returns Bending ($B_b$) and Shear ($B_s$) matrices.
     *   Supports Tri3 and Quad4.
-5.  **`K_matrix.m`**:
+5.  **`src/K_matrix.m`**:
     *   Assembles $K = K_b + K_s$.
     *   Handles Reduced Integration logic internally.
-6.  **`F_vector.m`**:
+6.  **`src/F_vector.m`**:
     *   Integrates Gaussian load over element area using shape functions.
-7.  **`plot_results.m`**:
-    *   Generates and saves visualization plots to `result/` directory.
+7.  **`src/plot_results.m`**:
+    *   Generates and saves visualization plots to `result/` directory (in project root).
     *   Plots: Deflection, Rotation, Von Mises Stress, Curvature, 3D Deformed Shape.
 
 ## Maintenance Notes
 *   **Shear Locking**: If modifying element types or integration rules, ensure shear locking is prevented (usually by reduced integration or assumed shear strain fields).
 *   **DOF Indexing**: Global DOFs are ordered `[w1, tx1, ty1, w2, tx2, ty2, ...]`.
-*   **Results**: All outputs are directed to the `result/` folder to keep the root directory clean.
+*   **Results**: All outputs are directed to the `result/` folder in the project root to keep the source directory clean.
 
 ## Future Tasks
 *   If "Soft Support" (tangential rotation constrained) is required, update `Boundary_conditions.m`.

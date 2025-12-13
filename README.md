@@ -19,20 +19,25 @@ The solver supports both **Triangular (Tri3)** and **Quadrilateral (Quad4)** ele
 *   **Boundary Conditions**: Pinned edges ($w=0$) on all four sides (Hard Support).
 
 ## File Structure
-*   `main.m`: **Entry point**. Orchestrates the analysis, loops through mesh cases, and saves results.
-*   `generate_mesh.m`: Generates structured meshes with variable density (`nx`, `ny`).
-*   `K_matrix.m`: Assembles the global stiffness matrix ($K = K_b + K_s$).
-*   `B_matrix.m`: Computes Bending ($B_b$) and Shear ($B_s$) strain-displacement matrices.
-*   `F_vector.m`: Computes the global force vector by integrating the Gaussian load.
-*   `Boundary_conditions.m`: Identifies boundary nodes and applies Pinned constraints.
-*   `Enforce_BC.m`: Modifies $K$ and $F$ to enforce boundary conditions.
-*   `constitutive.m`: Post-processing to calculate Moments ($M$) and Shear Forces ($Q$).
-*   `plot_results.m`: Generates visualization plots (Deflection, Stress, etc.).
-*   `g_center.m`: Helper to calculate element centroids.
-*   `quadplot.m` / `triplot.m`: Mesh visualization helpers.
+All source code is located in the `src/` directory.
+
+*   `src/main.m`: **Entry point**. Orchestrates the analysis, loops through mesh cases, and saves results.
+*   `src/generate_mesh.m`: Generates structured meshes with variable density (`nx`, `ny`).
+*   `src/K_matrix.m`: Assembles the global stiffness matrix ($K = K_b + K_s$).
+*   `src/B_matrix.m`: Computes Bending ($B_b$) and Shear ($B_s$) strain-displacement matrices.
+*   `src/F_vector.m`: Computes the global force vector by integrating the Gaussian load.
+*   `src/Boundary_conditions.m`: Identifies boundary nodes and applies Pinned constraints.
+*   `src/Enforce_BC.m`: Modifies $K$ and $F$ to enforce boundary conditions.
+*   `src/constitutive.m`: Post-processing to calculate Moments ($M$) and Shear Forces ($Q$).
+*   `src/plot_results.m`: Generates visualization plots (Deflection, Stress, etc.).
+*   `src/g_center.m`: Helper to calculate element centroids.
+*   `src/quadplot.m` / `src/triplot.m`: Mesh visualization helpers.
 
 ## How to Run
-1.  Open MATLAB and navigate to the project directory.
+1.  Open MATLAB and navigate to the `src` directory:
+    ```matlab
+    >> cd src
+    ```
 2.  Run the `main.m` script:
     ```matlab
     >> main
@@ -41,7 +46,7 @@ The solver supports both **Triangular (Tri3)** and **Quadrilateral (Quad4)** ele
     *   **Element Types**: Tri3, Quad4.
     *   **Mesh Densities**: 5x5, 10x10, 50x50.
 4.  **Results**:
-    *   All results are saved in the `result/` directory.
+    *   All results are saved in the `result/` directory (located in the project root, one level up from `src`).
     *   Subfolders are named by case (e.g., `result/Quad4_50x50/`).
     *   Each folder contains:
         *   `DATA.mat`: Raw simulation data (`u`, `Es`, `Ss`, etc.).
