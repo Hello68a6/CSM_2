@@ -1,19 +1,22 @@
 
 % Mesh generation
+% Updated for Assignment 2 Problem 2
+% Supports variable mesh density via input arguments
 
-function [x_a,elem]=generate_mesh(flag)
+function [x_a,elem]=generate_mesh(flag, nx, ny)
      
     % Geometry dimensions (Square plate 1m x 1m)
     L = 1.0; 
     H = 1.0; 
     
-    % Number of elements in each direction
-    % Assignment requires:
-    % Triangles (flag=1): 50, 200, 5000 elements -> nx=ny=5, 10, 50
-    % Quads (flag=2): 25, 100, 2500 elements -> nx=ny=5, 10, 50
-    % Defaulting to 10x10 (200 triangles or 100 quads)
-    nx = 10; 
-    ny = 10;
+    % Default mesh density if not provided
+    if nargin < 3
+        % Assignment requires:
+        % Triangles (flag=1): 50, 200, 5000 elements -> nx=ny=5, 10, 50
+        % Quads (flag=2): 25, 100, 2500 elements -> nx=ny=5, 10, 50
+        nx = 10; 
+        ny = 10;
+    end
     
     dx = L / nx;
     dy = H / ny;

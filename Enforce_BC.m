@@ -2,13 +2,12 @@
 % input:
 % F: the original force vector
 % K: the original stiffness matrix
-% boundary:
-% dis:
-% x_a: the coordinates of all the nodes
+% boundary: boolean vector (1 for constrained, 0 for free)
+% dis: prescribed displacement values
 % output:
 % F: modified force vector
 % K: modified stiffness matrix
-function [F,K]=Enforce_BC(F,K,boundary,dis,x_a)
+function [F,K]=Enforce_BC(F,K,boundary,dis)
 
     [num_dofs, ~] = size(K);
     

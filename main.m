@@ -1,8 +1,6 @@
-
-
 % main routine
-% FEM code for 2D linear elasticity
-% Li, B. 2010 April
+% FEM code for Mindlin Plate Bending (Assignment 2, Problem 2)
+% Refactored for 3 DOFs per node (w, theta_x, theta_y)
 
 clear
 
@@ -14,7 +12,8 @@ flag=1;   % 1: triangular element;   2: quadrilateral element.
     % x_a is a [Nx2] matrix, N is the total number of nodes
     % elem is a [Mx3] matrix for triangular elements and [Mx4] matrix for
     % quadrilateral elements, M is the total number of elements
-    [x_a,elem]=generate_mesh(flag);
+    nx = 10; ny = 10; % Mesh density
+    [x_a,elem]=generate_mesh(flag, nx, ny);
         
     % Check the initial mesh
     if flag==1        
@@ -33,50 +32,51 @@ flag=1;   % 1: triangular element;   2: quadrilateral element.
     
     
  % 2. Boundary conditions
-    % auxiliaire data structure defined for the enforcement of boundary conditions
-    % boundary: a vector with 2N entries, each element of the vector is a boolean flag 
-    %           for the nodal displacement in x or y direction, 
+    % boundary: a vector with 3N entries (w, theta_x, theta_y)
     %           1 for constrained, 0 for free
-    %           e.g. (1 1 0 0 1 0 ...) means node 1 has displacement boundary conditions
-    %           applied in x and y direction, but node 3 has x displacement b.c.
-    % disp    : a vector with 2N entries, each element of the vector is the prescribed 
-    %           nodal displacement in x or y direction. For those free nodes, use (0 0)
-    % l_area  : a vector with N entries, each element of the vector is the surface area
-    %           associated with a node. If the node is not subjected to traction boundary
-    %           conditions, its surface area is zero.
-    [boundary,dis,l_area]=Boundary_conditions(x_a,elem);
+    % dis     : a vector with 3N entries, prescribed values (usually 0)
+    % Note: Pinned edges -> w=0, rotations free (Hard Support)
+    [boundary,dis]=Boundary_conditions(x_a,elem);
 
 % 3. Material Properties   
-    E  = 2.1e9; % Young's modulus [Pa]
-    nu = 0.3;   % Poisson ratio
-
+    E  = 210e9;   % Young's modulus [Pa]
+    nu = 0.3;     % Poisson ratio
+    t  = 0.05;    % Thickness [m]
+    k  = 5/6;     % Shear correction factor
+    
     properties(1)=E;
     properties(2)=nu;
+    properties(3)=t;
+    properties(4)=k;
 
-% 4. B matrix: B is a cell structure where B(i) is the B matrix of element i    
-    [B, N]=B_matrix(x_a,elem,xg,Area,flag);
+% 4. K matrix: K is a 3Nx3N matrix
+    % Assembles K_bending + K_shear
+    % Internally calls B_matrix for integration points
+    [K]=K_matrix(elem, x_a, properties, flag);
 
-% 5. K matrix: K is a 2Nx2N matrix, N is the total number of nodes
-    [K]=K_matrix(B,elem,x_a,Area,properties);
-
-% 6. Forces vector: F is a vector with 2N entries
-    Load = [0, -2e4]; % traction [N/m] 
-    [F]=F_vector(x_a,Load,l_area);
+% 6. Forces vector: F is a vector with 3N entries
+    % Gaussian Distributed Load: F = C * exp(-R^2 / (2*sigma^2))
+    % Parameters: [Amplitude, sigma, center_x, center_y]
+    LoadParams = [1e6, 0.1, 0.5, 0.5]; 
+    [F]=F_vector(x_a, elem, LoadParams, flag);
 
 % 7. Enforce Essential Boundary Condition
-    [F,K]=Enforce_BC(F,K,boundary,dis,x_a);
+    [F,K]=Enforce_BC(F,K,boundary,dis);
     
 % 8. Solve the problem
     [u]=K\F;
     
-% 9. Compute the strain, stress and pressure from the displacement
-    [Es,Ss,P]=constitutive(B,properties,u,elem,dim);
+% 9. Compute Moments and Shears
+    % Es: Curvatures and Shear Strains
+    % Ss: Moments (Mx, My, Mxy) and Shear Forces (Qx, Qy)
+    [Es,Ss]=constitutive(elem, x_a, properties, u, flag);
 
 % 10. Post-processor    
-    h=10; % amplification factor
-    plot_results(x_a,elem,P,u,h,N,flag);
+    h=1; % amplification factor for deflection
+    % Plot deflection w and maybe moments
+    plot_results(x_a,elem,u,h,flag);
 
-    save DATA Es Ss P u
+    save DATA Es Ss u
 
 
 

@@ -1,159 +1,102 @@
-% Calculate the B matrix for all the elements in this function
+% Calculate the B matrices (Bending and Shear) at a specific integration point
 %
 % input:
-% x_a  : coordinates of all the nodes
-% elem : connectivity table
-% xg   : barycenters of all the elements
-% Area : surface areas of all the elements
-% flag : 1 for linear shape function or triangular elements; 
-%        2 for bilinear shape function or quadrilateral elements
+% xi, eta : parametric coordinates of the integration point
+% xe, ye  : coordinates of the element nodes (vectors)
+% flag    : 1 for triangular elements (Tri3), 2 for quadrilateral elements (Quad4)
 %
 % output:
-% B: the B matrix for all the elements
-% p: values of the shape function at the barycenter of each element
-function [B,p]=B_matrix(x_a,elem,xg,Area,flag)
-        
-    [~,sp]=size(x_a);
+% Bb   : Bending B-matrix [3 x 3*num_nodes]
+% Bs   : Shear B-matrix [2 x 3*num_nodes]
+% detJ : Determinant of the Jacobian
+% N    : Shape function values at (xi, eta)
+function [Bb, Bs, detJ, N]=B_matrix(xi, eta, xe, ye, flag)
 
-     if flag==1
-         [dp,p]=linear_interpolation(elem,xg,Area,x_a);
-     elseif flag==2
-         [dp,p]=bilinear_interpolation(elem,xg,Area,x_a);
-     end
+    if flag == 2 % Quad4
+        % Node local coordinates (Standard isoparametric Quad4)
+        % 4 -- 3
+        % |    |
+        % 1 -- 2
+        xi_nodes  = [-1,  1,  1, -1];
+        eta_nodes = [-1, -1,  1,  1];
+        
+        % Shape functions and derivatives wrt xi, eta
+        N = zeros(1,4);
+        dNdxi = zeros(1,4);
+        dNdeta = zeros(1,4);
+        
+        for i = 1:4
+            N(i) = 0.25 * (1 + xi_nodes(i)*xi) * (1 + eta_nodes(i)*eta);
+            dNdxi(i) = 0.25 * xi_nodes(i) * (1 + eta_nodes(i)*eta);
+            dNdeta(i) = 0.25 * eta_nodes(i) * (1 + xi_nodes(i)*xi);
+        end
+        
+    elseif flag == 1 % Tri3
+        % Standard triangle: (0,0), (1,0), (0,1)
+        % N1 = 1 - xi - eta
+        % N2 = xi
+        % N3 = eta
+        
+        N = [1-xi-eta, xi, eta];
+        dNdxi = [-1, 1, 0];
+        dNdeta = [-1, 0, 1];
+    end
+    
+    % Jacobian Matrix
+    % J = [dx/dxi  dy/dxi;
+    %      dx/deta dy/deta]
+    J = [dNdxi * xe,  dNdxi * ye;
+         dNdeta * xe, dNdeta * ye];
      
-    [B]=bm(dp,elem,sp);
-
-end
-
-% This function calculates the value of a linear shape function and the derivative of
-% the linear shape function at the barycenters of triangular elements
-% input:
-% elem : connectivity table
-% xg   : barycenters of all the elements
-% Area : surface areas of all the elements
-% x_a  : coordinates of all the nodes
-% output:
-% p    : values of the linear shape function at the barycenters of the elements
-% dp   : derivatives of the linear shape function at the barycenters of the elements
-function [dp,p]=linear_interpolation(elem,xg,Area,x_a)
-
-    [elements,~]=size(elem);
-
-    for i=1:elements
-        x1=x_a(elem(i,1),1);
-        x2=x_a(elem(i,2),1);
-        x3=x_a(elem(i,3),1);
-        y1=x_a(elem(i,1),2);
-        y2=x_a(elem(i,2),2);
-        y3=x_a(elem(i,3),2);
-        
-        N(1,1)=xg(i,1)*(y2-y3)+xg(i,2)*(x3-x2)+(x2*y3-x3*y2);
-        N(2,1)=xg(i,1)*(y3-y1)+xg(i,2)*(x1-x3)+(x3*y1-x1*y3);
-        N(3,1)=xg(i,1)*(y1-y2)+xg(i,2)*(x2-x1)+(x1*y2-x2*y1);
-        
-        p(i)={N/2/Area(i)};
-        
-        dN(1,1)=y2-y3;
-        dN(1,2)=x3-x2;
-        dN(2,1)=y3-y1;
-        dN(2,2)=x1-x3;
-        dN(3,1)=y1-y2;
-        dN(3,2)=x2-x1;
-               
-        dp(i)={dN/2/Area(i)};
+    detJ = det(J);
+    
+    % Inverse Jacobian
+    % Handle singular Jacobian if necessary (mesh distortion)
+    if abs(detJ) < 1e-10
+        invJ = zeros(2,2); % Should trigger error or warning in robust code
+    else
+        invJ = inv(J);
     end
-
-end
-
-% This function calculates the value of a bilinear shape function and the derivative of
-% the bilinear shape function at the barycenters of quadrilateral elements
-% input:
-% elem : connectivity table
-% xg   : barycenters of all the elements
-% Area : surface areas of all the elements
-% x_a  : coordinates of all the nodes
-% output:
-% p    : values of the bilinear shape function at the barycenters of the elements
-% dp   : derivatives of the bilinear shape function at the barycenters of the elements
-function [dp,p]=bilinear_interpolation(elem,xg,Area,x_a)
-
-    [elements,NNE]=size(elem);
-    [~,sp]=size(x_a);
-
-    for i=1:elements        
-        N(1)=0.25;
-        N(2)=0.25;
-        N(3)=0.25;
-        N(4)=0.25;
+    
+    % Derivatives wrt global coordinates x, y
+    % [dN/dx] = invJ * [dN/dxi]
+    % [dN/dy]          [dN/deta]
+    
+    dN_dxi_eta = [dNdxi; dNdeta];
+    dN_dx_y = invJ * dN_dxi_eta;
+    
+    dNdx = dN_dx_y(1, :);
+    dNdy = dN_dx_y(2, :);
+    
+    % Initialize B matrices
+    num_nodes = length(xe);
+    Bb = zeros(3, 3*num_nodes);
+    Bs = zeros(2, 3*num_nodes);
+    
+    % Construct B matrices
+    % DOFs per node: [w, theta_x, theta_y]
+    % theta_x: Rotation about y-axis -> u = z*theta_x
+    % theta_y: Rotation about x-axis -> v = z*theta_y
+    
+    for i = 1:num_nodes
+        % Column indices for node i
+        idx = 3*(i-1) + (1:3); 
         
-        p(i)={N};
-
-        z=[0. 0.];
-
-        for j=1:NNE
-            for k=1:sp
-                xx(j,k)=x_a(elem(i,j),k);
-            end
-        end
+        % Bending Strain (Curvatures)
+        % kx  = d(theta_x)/dx
+        % ky  = d(theta_y)/dy
+        % kxy = d(theta_x)/dy + d(theta_y)/dx
         
-        % Ni derivatives respect natural coordinates "z1" & "z2":
-        dN_i = [(z(2)-1)  (-z(2)+1)  (1+z(2))  (-1-z(2));
-                (z(1)-1)  (-z(1)-1)  (1+z(1))  (1-z(1))]/4;
-        % Jacobian Matrix:
-        J = dN_i*xx;
-        detJ = det(J);
-
-        dN = J\dN_i;
-               
-        dp(i)={dN'};
-    end
-
-end
-
-% This function forms the B matrix for each element
-% input:
-% dp   : derivatives of the shape functions of each node evaluated at the
-%        barycenters of the elements
-% elem : connectivity table
-% sp   : dimension of the problem
-% output:
-% B: the B matrix of all the elements
-function [B]=bm(dp,elem,sp)
-
-    [elements, ~] = size(elem);
-    B = cell(1, elements);
-
-    for i = 1:elements
-        dpe = dp{i}; % Derivatives for current element [NNE x 2]
-        [NNE, ~] = size(dpe);
+        Bb(:, idx) = [0, dNdx(i), 0;
+                      0, 0,       dNdy(i);
+                      0, dNdy(i), dNdx(i)];
+                      
+        % Shear Strain
+        % gxz = dw/dx + theta_x
+        % gyz = dw/dy + theta_y
         
-        % Initialize element B matrix
-        % Rows: 3 (epsilon_x, epsilon_y, gamma_xy)
-        % Cols: 2 * NNE (u1, v1, u2, v2, ...)
-        Be = zeros(3, sp * NNE);
-        
-        for k = 1:NNE
-            % Derivatives of shape function for node k
-            dN_dx = dpe(k, 1);
-            dN_dy = dpe(k, 2);
-            
-            % Column indices for node k
-            col_u = sp * (k - 1) + 1;
-            col_v = sp * (k - 1) + 2;
-            
-            % Fill B matrix
-            % epsilon_x = dN_dx * u
-            Be(1, col_u) = dN_dx;
-            
-            % epsilon_y = dN_dy * v
-            Be(2, col_v) = dN_dy;
-            
-            % gamma_xy = dN_dy * u + dN_dx * v
-            Be(3, col_u) = dN_dy;
-            Be(3, col_v) = dN_dx;
-        end
-        
-        B{i} = Be;
+        Bs(:, idx) = [dNdx(i), N(i), 0;
+                      dNdy(i), 0,    N(i)];
     end
 
 end

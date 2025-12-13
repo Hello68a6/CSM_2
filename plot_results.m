@@ -1,64 +1,38 @@
-
-
-function plot_results(x_a,elem,P,d,h,N,flag)
-
-    [elements,NNE]=size(elem);
-    [nodes,sp]=size(x_a);
+function plot_results(x_a,elem,u,h,flag)
+    % Plot the transverse deflection w
     
-    x=zeros(nodes,1);
-    y=zeros(nodes,1);
-    x1=zeros(nodes,1);
-    y1=zeros(nodes,1);
+    [num_nodes, ~] = size(x_a);
     
-    for i=1:nodes
-        x(i,1)=x_a(i,1);
-        y(i,1)=x_a(i,2);
-        
-        %Deformed coordinates
-        x1(i)=x(i)+h*d(i*sp-1);
-        y1(i)=y(i)+h*d(i*sp);
+    % Extract w from global displacement vector u
+    w = zeros(num_nodes, 1);
+    for i = 1:num_nodes
+        w(i) = u(3*i-2);
     end
     
-    DDD=max(x(:));
-    HHH=max(y(:));
+    % Plot Deformed Mesh (3D)
+    figure;
+    % Use patch for both element types
+    % Vertices: x, y, w*h
+    patch('Faces', elem, 'Vertices', [x_a(:,1), x_a(:,2), w*h], ...
+          'FaceColor', 'interp', 'CData', w, 'EdgeColor', 'k', 'FaceAlpha', 0.8);
+          
+    title(['Deformed Shape (Scale Factor: ' num2str(h) ')']);
+    xlabel('X'); ylabel('Y'); zlabel('w');
+    colorbar;
+    view(3);
+    axis equal;
+    grid on;
     
-%1.  Deformed shape
+    % Contour Plot (2D view)
+    figure;
+    patch('Faces', elem, 'Vertices', [x_a(:,1), x_a(:,2), zeros(size(w))], ...
+          'FaceColor', 'interp', 'CData', w, 'EdgeColor', 'none');
+          
+    title('Transverse Deflection w Contour');
+    xlabel('X'); ylabel('Y');
+    colorbar;
+    view(2);
+    axis equal;
+    axis([min(x_a(:,1)) max(x_a(:,1)) min(x_a(:,2)) max(x_a(:,2))]);
     
-      figure
-      if flag==1
-        triplot(elem,x,y,'b'), hold on
-        triplot(elem,x1,y1,'r')
-      elseif flag==2
-        quadplot(elem,x,y,'b'), 
-        hold on
-        quadplot(elem,x1,y1,'r')
-      end
-    
-%2.  Pressure
-
-
-
-
-    %Pressure in nodes
-    PP=zeros(nodes,1);
-    for i=1:elements
-        p=N{i};
-        for j=1:NNE
-            PP(elem(i,j))=PP(elem(i,j))+P(i)*p(j);
-        end                     
-    end
-    
-    
-    [xg1,yg1]=meshgrid(0:0.1:DDD,0:0.1:HHH);
-
-    figure
-    Pr=griddata(x,y,PP(:)/9800,xg1,yg1,'cubic');
-    surf(xg1,yg1,Pr)
-    colorbar
-    axis([0,DDD,0,HHH])
-    drawnow
-
-
-
-
 end
